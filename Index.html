@@ -1,0 +1,147 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>AQai Studio v8 – Real API Key Ready</title>
+<style>
+*{box-sizing:border-box;font-family:'Poppins',sans-serif;}
+body{margin:0;transition:background .3s,color .3s;}
+body.light{background:#F9FAFB;color:#111827;}
+body.dark{background:#0D0D0D;color:#F9FAFB;}
+header{display:flex;justify-content:space-between;align-items:center;
+background:#2563EB;color:#fff;padding:10px 15px;}
+button{background:#2563EB;color:#fff;border:none;padding:8px 15px;
+border-radius:8px;font-size:15px;margin:3px;cursor:pointer;}
+.menu{position:fixed;top:0;left:-240px;width:240px;height:100%;
+background:#111827;color:#fff;padding:15px;transition:left .3s;}
+.menu.open{left:0;}
+.menu a{display:block;color:#fff;text-decoration:none;margin:10px 0;}
+.content{padding:20px;}
+textarea,select,input{width:100%;margin:8px 0;padding:8px;border-radius:5px;border:1px solid #ccc;}
+.output{margin-top:10px;text-align:center;}
+.output img,.output video,audio{max-width:100%;border-radius:10px;margin-top:10px;}
+label{display:block;margin-top:10px;}
+</style>
+</head>
+<body class="light">
+<header>
+  <h3>AQai Studio</h3>
+  <div>
+    <button id="menuBtn">☰</button>
+    <button id="themeToggle">🌗</button>
+  </div>
+</header>
+
+
+<nav class="menu" id="sideMenu">
+  <a href="#" data-section="txtImg">🖼️ Text → Image</a>
+  <a href="#" data-section="txtVid">🎬 Text → Video</a>
+  <a href="#" data-section="txtAud">🔊 Text → Audio</a>
+  <a href="#" data-section="apiKeys">🔐 API Keys</a>
+</nav>
+
+
+<main class="content">
+  <section id="txtImg" class="section active">
+    <h3>Text → Image</h3>
+    <textarea id="imgPrompt" placeholder="Describe image..."></textarea>
+    <select id="imgStyle"><option>Cinematic</option><option>Realistic</option></select>
+    <select id="imgRatio"><option>1:1</option><option>16:9</option><option>9:16</option></select>
+    <button id="genImgBtn">Generate Image</button>
+    <div class="output" id="imgOut"></div>
+  </section>
+
+
+  <section id="txtVid" class="section" style="display:none">
+    <h3>Text → Video</h3>
+    <textarea id="vidPrompt" placeholder="Describe video scene..."></textarea>
+    <select id="vidStyle"><option>Cinematic</option><option>Vlog</option></select>
+    <select id="vidRatio"><option>16:9</option><option>9:16</option></select>
+    <button id="genVidBtn">Generate Video</button>
+    <div class="output" id="vidOut"></div>
+  </section>
+
+
+  <section id="txtAud" class="section" style="display:none">
+    <h3>Text → Audio</h3>
+    <textarea id="audPrompt" placeholder="Enter narration..."></textarea>
+    <select id="audVoice"><option>Male</option><option>Female</option></select>
+    <button id="genAudBtn">Generate Audio</button>
+    <div class="output" id="audOut"></div>
+  </section>
+
+
+  <section id="apiKeys" class="section" style="display:none">
+    <h3>🔐 API Key Settings</h3>
+    <label>🧠 Gemini API Key</label>
+    <input id="geminiKey" type="password" placeholder="Enter Gemini API Key" />
+    <label>🎨 Stability AI Key</label>
+    <input id="stabilityKey" type="password" placeholder="Enter Stability Key" />
+    <label>🔊 Google TTS Key</label>
+    <input id="ttsKey" type="password" placeholder="Enter Google TTS Key" />
+    <button id="saveKeys">💾 Save Keys</button>
+    <p id="saveMsg"></p>
+  </section>
+</main>
+
+
+<script>
+const body=document.body,menuBtn=document.getElementById('menuBtn'),
+sideMenu=document.getElementById('sideMenu'),themeToggle=document.getElementById('themeToggle'),
+sections=document.querySelectorAll('.section'),links=document.querySelectorAll('.menu a');
+
+
+menuBtn.onclick=()=>sideMenu.classList.toggle('open');
+themeToggle.onclick=()=>body.classList.toggle('dark');
+links.forEach(link=>link.onclick=(e)=>{
+ e.preventDefault();
+ sections.forEach(s=>s.style.display='none');
+ document.getElementById(link.dataset.section).style.display='block';
+ sideMenu.classList.remove('open');
+});
+
+
+const geminiKey=document.getElementById('geminiKey');
+const stabilityKey=document.getElementById('stabilityKey');
+const ttsKey=document.getElementById('ttsKey');
+const saveMsg=document.getElementById('saveMsg');
+
+
+function loadKeys(){
+ geminiKey.value=localStorage.getItem('geminiKey')||"";
+ stabilityKey.value=localStorage.getItem('stabilityKey')||"";
+ ttsKey.value=localStorage.getItem('ttsKey')||"";
+}
+document.getElementById('saveKeys').onclick=()=>{
+ localStorage.setItem('geminiKey',geminiKey.value);
+ localStorage.setItem('stabilityKey',stabilityKey.value);
+ localStorage.setItem('ttsKey',ttsKey.value);
+ saveMsg.textContent="✅ Keys saved locally!";
+};
+loadKeys();
+
+
+// Simple dummy generator (backend ready)
+document.getElementById("genImgBtn").onclick=()=>generate("image");
+document.getElementById("genVidBtn").onclick=()=>generate("video");
+document.getElementById("genAudBtn").onclick=()=>generate("audio");
+
+
+async function generate(type){
+ let prompt=document.getElementById(type==="image"?"imgPrompt":type==="video"?"vidPrompt":"audPrompt").value;
+ let output=document.getElementById(type==="image"?"imgOut":type==="video"?"vidOut":"audOut");
+ output.innerHTML="⏳ Generating "+type+"...";
+ try{
+   const res=await fetch("/api?type="+type+"&prompt="+encodeURIComponent(prompt));
+   const data=await res.json();
+   if(data.url){
+     if(type==="image")output.innerHTML=`<img src="${data.url}">`;
+     if(type==="video")output.innerHTML=`<video src="${data.url}" controls></video>`;
+     if(type==="audio")output.innerHTML=`<audio src="${data.url}" controls></audio>`;
+   }else output.innerHTML="❌ API failed.";
+ }catch(err){output.innerHTML="⚠️ Connection error.";}
+}
+</script>
+</body>
+</html>
